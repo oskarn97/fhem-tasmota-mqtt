@@ -166,8 +166,7 @@ sub Decode {
         return undef;
     }
 
-    readingsBeginUpdate($hash);    
-    TasmotaMQTT::DEVICE::Expand($hash, $h, "", "");
+    readingsBeginUpdate($hash);
 
     if(defined $topic) {   
         my @parts = split('/', $topic);
@@ -181,8 +180,13 @@ sub Decode {
             }
             readingsBulkUpdate($hash, "last_on", time()) if(lc $h->{POWER} eq "on");
             readingsBulkUpdate($hash, "last_off", time()) if(lc $h->{POWER} eq "off");
+            readingsBulkUpdate($hash, 'power', lc $h->{POWER});
+            readingsEndUpdate($hash, 1);
+            return undef;
         }
     }
+
+    TasmotaMQTT::DEVICE::Expand($hash, $h, "", "");
 
     readingsEndUpdate($hash, 1);
 
@@ -203,7 +207,7 @@ sub Expand {
     } elsif (ref($ref) eq "HASH") {
         while (my ($key, $value) = each %{$ref}) {
             if (ref($value) && !(ref($value) =~ m/Boolean/)) {
-                TasmotaMQTT::DEVICE::Expand($hash, $value, $prefix . $key . $suffix . "-", "");
+                TasmotaMQTT::DEVICE::Expand($hash, $value, $prefix . $key . $suffix . "_", "");
             } else {
                 # replace illegal characters in reading names
                 (my $reading = $prefix . $key . $suffix) =~ s/[^A-Za-z\d_\.\-\/]/_/g;
@@ -212,9 +216,9 @@ sub Expand {
                 }
 
                 if($reading eq "POWER") {
-                    $reading = lc $reading;
-                    $value = lc $value;
-                    readingsBulkUpdateIfChanged($hash, 'state', $value);
+                    readingsBulkUpdateIfChanged($hash, 'state', lc $value);
+                    readingsBulkUpdateIfChanged($hash, 'power', lc $value);
+                    next;
                 }
 
                 readingsBulkUpdate($hash, $reading, $value);
