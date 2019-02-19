@@ -104,6 +104,9 @@ sub SubscribeReadings {
 
     ($mqos, $mretain, $mtopic, $mvalue, $mcmd) = MQTT::parsePublishCmdStr('tele/'. $hash->{topic} . '/SENSOR');
     client_subscribe_topic($hash, $mtopic, $mqos, $mretain);
+
+    ($mqos, $mretain, $mtopic, $mvalue, $mcmd) = MQTT::parsePublishCmdStr('cmnd/'. $hash->{topic} .'/POWER');
+    client_subscribe_topic($hash, $mtopic, $mqos, $mretain);
 }
 
 sub Undefine($$) {
@@ -113,6 +116,7 @@ sub Undefine($$) {
     client_unsubscribe_topic($hash, 'tele/'. $hash->{topic} .'/STATE');
     client_unsubscribe_topic($hash, 'stat/'. $hash->{topic} .'/RESULT');
     client_unsubscribe_topic($hash, 'tele/'. $hash->{topic} .'/SENSOR');
+    client_unsubscribe_topic($hash, 'cmnd/'. $hash->{topic} .'/POWER');
 
     delete($main::modules{TasmotaMQTTDevice}{defptr}{$hash->{topic}});
     return MQTT::Client_Undefine($hash);
@@ -150,6 +154,10 @@ sub onmessage($$$) {
     Log3($hash->{NAME}, 5, "received message '" . $message . "' for topic: " . $topic);
     my @parts = split('/', $topic);
 
+    if($parts[0] eq 'cmnd') {
+        $hash->{".lastCommand"} = main::gettimeofday();
+    }
+
     TasmotaMQTT::DEVICE::Decode($hash, $message, $topic);
 }
 
@@ -175,7 +183,7 @@ sub Decode {
 
         if($path eq "RESULT" && defined $h->{POWER}) {
             my $setDelta = main::gettimeofday() - $hash->{".lastSet"};
-            if(!(defined $hash->{".resultPending"} && $setDelta < 10 || $setDelta < 1.5)) {
+            if(!(defined $hash->{".resultPending"} && $setDelta < 10 || $setDelta < 1.5) && main::gettimeofday() - $hash->{".lastCommand"} > 2) {
                 readingsBulkUpdate($hash, "manual", lc $h->{POWER});
                 readingsBulkUpdate($hash, "last_on_manual", time()) if(lc $h->{POWER} eq "on");
                 readingsBulkUpdate($hash, "last_off_manual", time()) if(lc $h->{POWER} eq "off");
