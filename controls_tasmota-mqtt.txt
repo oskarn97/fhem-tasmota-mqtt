@@ -1,2 +1,2 @@
 DEL ./FHEM/72_TasmotaMQTTDevice.pm
-UPD 2019-01-31_01:26:27 7126 FHEM/72_TasmotaMQTTDevice.pm
+UPD 2019-02-19_22:06:27 7240 FHEM/72_TasmotaMQTTDevice.pm

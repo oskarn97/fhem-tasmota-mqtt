@@ -60,8 +60,8 @@ BEGIN {
 sub Define() {
     my ($hash, $def) = @_;
     my @args = split("[ \t]+", $def);
-    return "Invalid number of arguments: define <name> TasmotaMQTTDevice <topic>" if (int(@args) < 1);
     my ($name, $type, $topic) = @args;
+    $topic = $name if(!defined $topic);
 
     $hash->{TYPE} = 'MQTT_DEVICE';
     MQTT::Client_Define($hash, $def);
@@ -132,6 +132,7 @@ sub Set($$$@) {
     my $values = @values;
 
     $hash->{".lastSet"} = main::gettimeofday();
+    $hash->{".resultPending"} = 1;
     publish($hash, 'cmnd/'. $hash->{topic} .'/POWER', $command);
 }
 
@@ -173,11 +174,13 @@ sub Decode {
         my $path = $parts[-1];
 
         if($path eq "RESULT" && defined $h->{POWER}) {
-            if(main::gettimeofday() - $hash->{".lastSet"} > 1.5) {
+            my $setDelta = main::gettimeofday() - $hash->{".lastSet"};
+            if(!(defined $hash->{".resultPending"} && $setDelta < 10 || $setDelta < 1.5)) {
                 readingsBulkUpdate($hash, "manual", lc $h->{POWER});
                 readingsBulkUpdate($hash, "last_on_manual", time()) if(lc $h->{POWER} eq "on");
                 readingsBulkUpdate($hash, "last_off_manual", time()) if(lc $h->{POWER} eq "off");
             }
+            delete $hash->{".resultPending"};
             readingsBulkUpdate($hash, "last_on", time()) if(lc $h->{POWER} eq "on");
             readingsBulkUpdate($hash, "last_off", time()) if(lc $h->{POWER} eq "off");
             readingsBulkUpdate($hash, 'power', lc $h->{POWER});
