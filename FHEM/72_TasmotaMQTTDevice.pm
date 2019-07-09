@@ -108,7 +108,7 @@ sub SubscribeReadings {
     ($mqos, $mretain, $mtopic, $mvalue, $mcmd) = MQTT::parsePublishCmdStr('cmnd/'. $hash->{topic} .'/POWER');
     client_subscribe_topic($hash, $mtopic, $mqos, $mretain);
 
-    ($mqos, $mretain, $mtopic, $mvalue, $mcmd) = MQTT::parsePublishCmdStr('cmnd/'. $hash->{topic} .'/MARGINS');
+    ($mqos, $mretain, $mtopic, $mvalue, $mcmd) = MQTT::parsePublishCmdStr('tele/'. $hash->{topic} .'/MARGINS');
     client_subscribe_topic($hash, $mtopic, $mqos, $mretain);
 }
 
@@ -120,7 +120,7 @@ sub Undefine($$) {
     client_unsubscribe_topic($hash, 'stat/'. $hash->{topic} .'/RESULT');
     client_unsubscribe_topic($hash, 'tele/'. $hash->{topic} .'/SENSOR');
     client_unsubscribe_topic($hash, 'cmnd/'. $hash->{topic} .'/POWER');
-    client_unsubscribe_topic($hash, 'cmnd/'. $hash->{topic} .'/MARGINS');
+    client_unsubscribe_topic($hash, 'tele/'. $hash->{topic} .'/MARGINS');
 
     delete($main::modules{TasmotaMQTTDevice}{defptr}{$hash->{topic}});
     return MQTT::Client_Undefine($hash);
